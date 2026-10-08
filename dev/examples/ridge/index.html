@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Ridge regression · MargLikeGibbsOutput.jl</title><meta name="title" content="Ridge regression · MargLikeGibbsOutput.jl"/><meta property="og:title" content="Ridge regression · MargLikeGibbsOutput.jl"/><meta property="twitter:title" content="Ridge regression · MargLikeGibbsOutput.jl"/><meta name="description" content="Documentation for MargLikeGibbsOutput.jl."/><meta property="og:description" content="Documentation for MargLikeGibbsOutput.jl."/><meta property="twitter:description" content="Documentation for MargLikeGibbsOutput.jl."/><meta property="og:url" content="https://mattiasvillani.github.io/MargLikeGibbsOutput.jl/examples/ridge/"/><meta property="twitter:url" content="https://mattiasvillani.github.io/MargLikeGibbsOutput.jl/examples/ridge/"/><link rel="canonical" href="https://mattiasvillani.github.io/MargLikeGibbsOutput.jl/examples/ridge/"/><script data-outdated-warner src="../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.63.2/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../assets/documenter.js"></script><script src="../../search_index.js"></script><script src="../../siteinfo.js"></script><script src="../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../../">MargLikeGibbsOutput.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../../">Home</a></li><li><a class="tocitem" href="../../method/">Method</a></li><li><span class="tocitem">Examples</span><ul><li class="is-active"><a class="tocitem" href>Ridge regression</a><ul class="internal"><li><a class="tocitem" href="#Data"><span>Data</span></a></li><li><a class="tocitem" href="#Model"><span>Model</span></a></li><li><a class="tocitem" href="#Gibbs-sampler"><span>Gibbs sampler</span></a></li><li><a class="tocitem" href="#Posterior"><span>Posterior</span></a></li><li><a class="tocitem" href="#Marginal-likelihood"><span>Marginal likelihood</span></a></li><li><a class="tocitem" href="#Check-by-numerical-integration"><span>Check by numerical integration</span></a></li></ul></li><li><a class="tocitem" href="../nodal/">Probit regression</a></li><li><a class="tocitem" href="../galaxy/">Finite mixture models</a></li><li><a class="tocitem" href="../gnp/">Markov switching model</a></li></ul></li><li><a class="tocitem" href="../../api/">API</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Examples</a></li><li class="is-active"><a href>Ridge regression</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Ridge regression</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/mattiasvillani/MargLikeGibbsOutput.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/mattiasvillani/MargLikeGibbsOutput.jl/blob/main/examples/ridge.jl" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="Ridge-regression"><a class="docs-heading-anchor" href="#Ridge-regression">Ridge regression</a><a id="Ridge-regression-1"></a><a class="docs-heading-anchor-permalink" href="#Ridge-regression" title="Permalink"></a></h1><p>This example estimates the marginal likelihood of a linear regression with an L2-regularization (ridge) prior where the amount of regularization is learned from the data. The Gibbs sampler is the one in Box 16.2 of Villani&#39;s <em>Bayesian Learning</em> book, and the notation follows the book. The model and data are from Computer Lab 4 of the course Advanced Bayesian Learning.</p><p>In this model the marginal likelihood can also be computed by numerical integration, so the example ends with a check of the estimate.</p><pre><code class="language-julia hljs">using MargLikeGibbsOutput, Distributions, LinearAlgebra, Random, Statistics
+using Distributions: loggamma</code></pre><h2 id="Data"><a class="docs-heading-anchor" href="#Data">Data</a><a id="Data-1"></a><a class="docs-heading-anchor-permalink" href="#Data" title="Permalink"></a></h2><p>The prostate cancer data from <em>The Elements of Statistical Learning</em> (Hastie, Tibshirani and Friedman, 2009, Section 3.2.1), with all 97 observations. The response is <code>lpsa</code> in the last column, and the covariates are <code>lcavol</code>, <code>lweight</code>, <code>age</code>, <code>lbph</code>, <code>svi</code>, <code>lcp</code>, <code>gleason</code> and <code>pgg45</code>.</p><pre><code class="language-julia hljs">prostate = [
+    -0.579818 2.769459 50 -1.386294 0 -1.386294 6 0 -0.430783
+    -0.994252 3.319626 58 -1.386294 0 -1.386294 6 0 -0.162519
+    -0.510826 2.691243 74 -1.386294 0 -1.386294 7 20 -0.162519
+    -1.203973 3.282789 58 -1.386294 0 -1.386294 6 0 -0.162519
+    0.751416 3.432373 62 -1.386294 0 -1.386294 6 0 0.371564
+    -1.049822 3.228826 50 -1.386294 0 -1.386294 6 0 0.765468
+    0.737164 3.473518 64 0.615186 0 -1.386294 6 0 0.765468
+    0.693147 3.539509 58 1.536867 0 -1.386294 6 0 0.854415
+    -0.776529 3.539509 47 -1.386294 0 -1.386294 6 0 1.047319
+    0.223144 3.244544 63 -1.386294 0 -1.386294 6 0 1.047319
+    0.254642 3.604138 65 -1.386294 0 -1.386294 6 0 1.266948
+    -1.347074 3.598681 63 1.266948 0 -1.386294 6 0 1.266948
+    1.61343 3.022861 63 -1.386294 0 -0.597837 7 30 1.266948
+    1.477049 2.998229 67 -1.386294 0 -1.386294 7 5 1.348073
+    1.205971 3.442019 57 -1.386294 0 -0.430783 7 5 1.398717
+    1.541159 3.061052 66 -1.386294 0 -1.386294 6 0 1.446919
+    -0.415515 3.516013 70 1.244155 0 -0.597837 7 30 1.470176
+    2.288486 3.649359 66 -1.386294 0 0.371564 6 0 1.492904
+    -0.562119 3.267666 41 -1.386294 0 -1.386294 6 0 1.558145
+    0.182322 3.825375 70 1.658228 0 -1.386294 6 0 1.599388
+    1.147402 3.419365 59 -1.386294 0 -1.386294 6 0 1.638997
+    2.059239 3.501043 60 1.474763 0 1.348073 7 20 1.658228
+    -0.544727 3.37588 59 -0.798508 0 -1.386294 6 0 1.695616
+    1.781709 3.451574 63 0.438255 0 1.178655 7 60 1.713798
+    0.385262 3.6674 69 1.599388 0 -1.386294 6 0 1.731656
+    1.446919 3.124565 68 0.300105 0 -1.386294 6 0 1.766442
+    0.512824 3.719651 65 -1.386294 0 -0.798508 7 70 1.800058
+    -0.400478 3.865979 67 1.816452 0 -1.386294 7 20 1.816452
+    1.040277 3.128951 67 0.223144 0 0.04879 7 80 1.848455
+    2.409644 3.37588 65 -1.386294 0 1.619388 6 0 1.894617
+    0.285179 4.090169 65 1.962908 0 -0.798508 6 0 1.924249
+    0.182322 3.804438 65 1.704748 0 -1.386294 6 0 2.008214
+    1.275363 3.037354 71 1.266948 0 -1.386294 6 0 2.008214
+    0.00995 3.267666 54 -1.386294 0 -1.386294 6 0 2.021548
+    -0.01005 3.216874 63 -1.386294 0 -0.798508 6 0 2.047693
+    1.308333 4.11985 64 2.171337 0 -1.386294 7 5 2.085672
+    1.423108 3.657131 73 -0.579819 0 1.658228 8 15 2.157559
+    0.457425 2.374906 64 -1.386294 0 -1.386294 7 15 2.191654
+    2.660959 4.085136 68 1.373716 1 1.832581 7 35 2.213754
+    0.797507 3.013081 56 0.936093 0 -0.162519 7 5 2.277267
+    0.620576 3.141995 60 -1.386294 0 -1.386294 9 80 2.297573
+    1.442202 3.68261 68 -1.386294 0 -1.386294 7 10 2.307573
+    0.582216 3.865979 62 1.713798 0 -0.430783 6 0 2.327278
+    1.771557 3.896909 61 -1.386294 0 0.81093 7 6 2.374906
+    1.48614 3.409496 66 1.7492 0 -0.430783 7 20 2.521721
+    1.663926 3.392829 61 0.615186 0 -1.386294 7 15 2.553344
+    2.727853 3.995445 79 1.879465 1 2.656757 9 100 2.568788
+    1.163151 4.035125 68 1.713798 0 -0.430783 7 40 2.568788
+    1.745716 3.498022 43 -1.386294 0 -1.386294 6 0 2.591516
+    1.22083 3.568123 70 1.373716 0 -0.798508 6 0 2.591516
+    1.091923 3.993603 68 -1.386294 0 -1.386294 7 50 2.656757
+    1.660131 4.234831 64 2.073172 0 -1.386294 6 0 2.677591
+    0.512824 3.633631 64 1.492904 0 0.04879 7 70 2.68444
+    2.127041 4.121473 68 1.766442 0 1.446919 7 40 2.691243
+    3.15359 3.516013 59 -1.386294 0 -1.386294 7 5 2.704711
+    1.266948 4.280132 66 2.122262 0 -1.386294 7 15 2.718001
+    0.97456 2.865054 47 -1.386294 0 0.500775 7 4 2.788093
+    0.463734 3.764682 49 1.423108 0 -1.386294 6 0 2.794228
+    0.542324 4.178226 70 0.438255 0 -1.386294 7 20 2.806386
+    1.061257 3.851211 61 1.294727 0 -1.386294 7 40 2.81241
+    0.457425 4.524502 73 2.326302 0 -1.386294 6 0 2.841998
+    1.997418 3.719651 63 1.619388 1 1.909542 7 40 2.853592
+    2.775709 3.524889 72 -1.386294 0 1.558145 9 95 2.853592
+    2.034706 3.917011 66 2.008214 1 2.110213 7 60 2.882004
+    2.073172 3.623007 64 -1.386294 0 -1.386294 6 0 2.882004
+    1.458615 3.836221 61 1.321756 0 -0.430783 7 20 2.88759
+    2.022871 3.878466 68 1.783391 0 1.321756 7 70 2.92047
+    2.198335 4.050915 72 2.307573 0 -0.430783 7 10 2.962692
+    -0.446287 4.408547 69 -1.386294 0 -1.386294 6 0 2.962692
+    1.193922 4.780383 72 2.326302 0 -0.798508 7 5 2.972975
+    1.86408 3.593194 60 -1.386294 1 1.321756 7 60 3.013081
+    1.160021 3.341093 77 1.7492 0 -1.386294 7 25 3.037354
+    1.214913 3.825375 69 -1.386294 1 0.223144 7 20 3.056357
+    1.838961 3.236716 60 0.438255 1 1.178655 9 90 3.075006
+    2.999226 3.849083 69 -1.386294 1 1.909542 7 20 3.275256
+    3.14113 3.263849 68 -0.051293 1 2.420368 7 50 3.337547
+    2.010895 4.433789 72 2.122262 0 0.500775 7 60 3.392829
+    2.537657 4.354784 78 2.326302 0 -1.386294 7 10 3.435599
+    2.6483 3.582129 69 -1.386294 1 2.583998 7 70 3.457893
+    2.77944 3.823192 63 -1.386294 0 0.371564 7 50 3.513037
+    1.467874 3.070376 66 0.559616 0 0.223144 7 40 3.516013
+    2.513656 3.473518 57 0.438255 0 2.327278 7 60 3.530763
+    2.613007 3.888754 77 -0.527633 1 0.559616 7 30 3.565298
+    2.677591 3.838376 65 1.115142 0 1.7492 9 70 3.57094
+    1.562346 3.709907 60 1.695616 0 0.81093 7 30 3.587677
+    3.302849 3.51898 64 -1.386294 1 2.327278 7 60 3.630985
+    2.024193 3.731699 58 1.638997 0 -1.386294 6 0 3.680091
+    1.731656 3.369018 62 -1.386294 1 0.300105 7 30 3.712352
+    2.807594 4.718052 65 -1.386294 1 2.463853 7 60 3.984344
+    1.562346 3.69511 76 0.936093 1 0.81093 7 75 3.993603
+    3.246491 4.101817 68 -1.386294 0 -1.386294 6 0 4.029806
+    2.532903 3.677566 61 1.348073 1 -1.386294 7 15 4.129551
+    2.830268 3.876396 68 -1.386294 1 1.321756 7 60 4.385147
+    3.821004 3.896909 44 -1.386294 1 2.169054 7 40 4.684443
+    2.907447 3.396185 52 -1.386294 1 2.463853 7 10 5.143124
+    2.882564 3.77391 68 1.558145 1 1.558145 7 80 5.477509
+    3.471966 3.974998 68 0.438255 1 2.904165 7 20 5.582932
+]
+
+covariates = prostate[:, 1:8]
+standardized = (covariates .- mean(covariates; dims = 1)) ./ std(covariates; dims = 1)
+data = (y = prostate[:, 9], X = [ones(size(prostate, 1)) standardized])</code></pre><p>The covariates are standardized to have zero mean and unit variance, and the first column of <span>$X$</span> is the intercept.</p><h2 id="Model"><a class="docs-heading-anchor" href="#Model">Model</a><a id="Model-1"></a><a class="docs-heading-anchor-permalink" href="#Model" title="Permalink"></a></h2><p>The regression is</p><p class="math-container">\[y = X\beta + \varepsilon, \qquad \varepsilon \sim N(0, \sigma^2 I_n),\]</p><p>with the hierarchical L2-regularization prior</p><p class="math-container">\[\begin{aligned}
+\beta \mid \sigma^2, \psi^2 &amp;\sim N(0, \sigma^2 \psi^2 I_p), \\
+\sigma^2 &amp;\sim \text{Inv-}\chi^2(\nu_0, \tau_0^2), \\
+\psi^2 &amp;\sim \text{Inv-}\chi^2(\omega_0, \psi_0^2),
+\end{aligned}\]</p><p>where <span>$\lambda = 1/\psi^2$</span> is the regularization parameter of ridge regression. As in the lab, the intercept is not regularized but has the noninformative prior <span>$\beta_0 \mid \sigma^2 \sim N(0, \kappa_0^2 \sigma^2)$</span> with <span>$\kappa_0 = 100$</span>. In what follows <span>$\beta$</span> includes the intercept, <span>$p = 8$</span> is the number of covariates, and the prior of <span>$\beta$</span> is <span>$N(0, \sigma^2 \Omega_0^{-1})$</span> with <span>$\Omega_0 = \text{diag}(\kappa_0^{-2}, \psi^{-2}, \dots, \psi^{-2})$</span>.</p><p>The prior hyperparameters are the ones in the lab.</p><pre><code class="language-julia hljs">prior = (ν₀ = 0.01, τ₀² = 1.0, ω₀ = 0.01, ψ₀² = 1.0, κ₀ = 100.0)</code></pre><p>The scaled inverse chi-squared distribution is an inverse gamma distribution.</p><pre><code class="language-julia hljs">InvChisq(ν, τ²) = InverseGamma(ν / 2, ν * τ² / 2)
+
+Ω₀(ψ², prior, p) = Diagonal([1 / prior.κ₀^2; fill(1 / ψ², p)])</code></pre><h2 id="Gibbs-sampler"><a class="docs-heading-anchor" href="#Gibbs-sampler">Gibbs sampler</a><a id="Gibbs-sampler-1"></a><a class="docs-heading-anchor-permalink" href="#Gibbs-sampler" title="Permalink"></a></h2><p>The sampler in Box 16.2 has two blocks, <span>$(\beta, \sigma^2)$</span> and <span>$\psi^2$</span>:</p><p class="math-container">\[\begin{aligned}
+\text{Block 1:} \quad
+\beta \mid \sigma^2, \psi^2, y &amp;\sim N\big(\hat\beta_{L_2}, \sigma^2 \Omega_n^{-1}\big), \\
+\sigma^2 \mid \psi^2, y &amp;\sim \text{Inv-}\chi^2(\nu_n, \tau_n^2), \\
+\text{Block 2:} \quad
+\psi^2 \mid \beta, \sigma^2, y &amp;\sim \text{Inv-}\chi^2(\omega_n, \psi_n^2),
+\end{aligned}\]</p><p>where <span>$\hat\beta_{L_2} = \Omega_n^{-1} X^\top y$</span> is the ridge estimator and, from Box 5.3 with prior mean zero,</p><p class="math-container">\[\Omega_n = X^\top X + \Omega_0, \qquad \nu_n = \nu_0 + n, \qquad
+\nu_n \tau_n^2 = \nu_0 \tau_0^2 + y^\top y - \hat\beta_{L_2}^\top \Omega_n \hat\beta_{L_2},\]</p><p>and</p><p class="math-container">\[\omega_n = \omega_0 + p, \qquad
+\psi_n^2 = \Big(\sum_{j=1}^p (\beta_j/\sigma)^2 + \omega_0 \psi_0^2\Big) \Big/ \omega_n .\]</p><p>The sum in <span>$\psi_n^2$</span> is over the regularized coefficients, so it excludes the intercept.</p><pre><code class="language-julia hljs">function conjugate(ψ², data, prior)
+    (; y, X) = data
+    Ωₙ = Symmetric(X&#39;X + Ω₀(ψ², prior, size(X, 2) - 1))
+    β̂ = Ωₙ \ (X&#39;y)
+    νₙ = prior.ν₀ + length(y)
+    τₙ² = (prior.ν₀ * prior.τ₀² + y&#39;y - β̂&#39; * Ωₙ * β̂) / νₙ
+    return (; Ωₙ, β̂, νₙ, τₙ²)
+end
+
+function σ²_conditional(state, data, prior)
+    (; νₙ, τₙ²) = conjugate(state.ψ², data, prior)
+    return InvChisq(νₙ, τₙ²)
+end
+
+function β_conditional(state, data, prior)
+    (; Ωₙ, β̂) = conjugate(state.ψ², data, prior)
+    return MvNormal(β̂, Symmetric(state.σ² * inv(Ωₙ)))
+end
+
+function ψ²_conditional(state, data, prior)
+    slopes = state.β[2:end]
+    ωₙ = prior.ω₀ + length(slopes)
+    return InvChisq(ωₙ, (sum(abs2, slopes) / state.σ² + prior.ω₀ * prior.ψ₀²) / ωₙ)
+end</code></pre><p>Block 1 is drawn in two steps, first <span>$\sigma^2$</span> and then <span>$\beta$</span> given <span>$\sigma^2$</span>. The model is therefore set up with the three conditionals in the order <span>$\sigma^2$</span>, <span>$\beta$</span>, <span>$\psi^2$</span>, and each sweep is exactly the two-block sampler of Box 16.2. Note that the conditional of <span>$\sigma^2$</span> does not depend on <span>$\beta$</span>.</p><pre><code class="language-julia hljs">loglik(θ, data) = logpdf(MvNormal(data.X * θ.β, θ.σ² * I), data.y)
+
+function logprior(θ, prior)
+    p = length(θ.β) - 1
+    return logpdf(MvNormalCanon(Matrix(Ω₀(θ.ψ², prior, p) / θ.σ²)), θ.β) +
+        logpdf(InvChisq(prior.ν₀, prior.τ₀²), θ.σ²) + logpdf(InvChisq(prior.ω₀, prior.ψ₀²), θ.ψ²)
+end
+
+ridge = GibbsModel(
+    conditionals = (σ² = σ²_conditional, β = β_conditional, ψ² = ψ²_conditional); loglik, logprior)</code></pre><h2 id="Posterior"><a class="docs-heading-anchor" href="#Posterior">Posterior</a><a id="Posterior-1"></a><a class="docs-heading-anchor-permalink" href="#Posterior" title="Permalink"></a></h2><p>A posterior sample of 10000 draws after a burn-in of 1000 draws, as in the lab.</p><pre><code class="language-julia hljs">rng = Xoshiro(2024)
+init = (σ² = 1.0, β = zeros(9), ψ² = 1.0)
+draws = gibbs(rng, ridge, data, prior, init; ndraws = 10_000, burnin = 1_000)
+
+names = [&quot;intercept&quot;, &quot;lcavol&quot;, &quot;lweight&quot;, &quot;age&quot;, &quot;lbph&quot;, &quot;svi&quot;, &quot;lcp&quot;, &quot;gleason&quot;, &quot;pgg45&quot;]
+summary(name, x) = println(rpad(name, 10), &quot;mean = &quot;, lpad(round(mean(x); digits = 3), 6),
+    &quot;   std = &quot;, round(std(x); digits = 3))
+for (j, name) in enumerate(names)
+    summary(name, [draw.β[j] for draw in draws])
+end
+summary(&quot;σ²&quot;, [draw.σ² for draw in draws])
+summary(&quot;ψ²&quot;, [draw.ψ² for draw in draws])
+summary(&quot;λ&quot;, [1 / draw.ψ² for draw in draws])</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">intercept mean =  2.478   std = 0.071
+lcavol    mean =  0.586   std = 0.102
+lweight   mean =  0.258   std = 0.082
+age       mean = -0.127   std = 0.08
+lbph      mean =  0.124   std = 0.08
+svi       mean =  0.287   std = 0.093
+lcp       mean = -0.064   std = 0.116
+gleason   mean =  0.045   std = 0.101
+pgg45     mean =    0.1   std = 0.109
+σ²        mean =  0.496   std = 0.076
+ψ²        mean =   0.21   std = 0.159
+λ         mean =  6.894   std = 4.214</code></pre><h2 id="Marginal-likelihood"><a class="docs-heading-anchor" href="#Marginal-likelihood">Marginal likelihood</a><a id="Marginal-likelihood-1"></a><a class="docs-heading-anchor-permalink" href="#Marginal-likelihood" title="Permalink"></a></h2><p>With the blocks in this order, the posterior ordinate is decomposed as</p><p class="math-container">\[\pi(\theta^* \mid y) = \pi(\sigma^{2*} \mid y)\, \pi(\beta^* \mid y, \sigma^{2*})\,
+  \pi(\psi^{2*} \mid y, \sigma^{2*}, \beta^*).\]</p><p>The first factor averages the <span>$\text{Inv-}\chi^2(\nu_n, \tau_n^2)$</span> density over the draws of <span>$\psi^2$</span> from the full sampler. The second averages the normal density of <span>$\beta$</span> over the draws of <span>$\psi^2$</span> from a reduced run with <span>$\sigma^2$</span> fixed. The third is the full conditional of <span>$\psi^2$</span>, which is known exactly.</p><pre><code class="language-julia hljs">estimate = chib(rng, ridge, data, prior, init; ndraws = 10_000, burnin = 1_000)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">ChibEstimate(log marginal likelihood = -130.348, NSE = 0.0024)</code></pre><p>The log ordinates of the three blocks are</p><pre><code class="language-julia hljs">estimate.logordinates</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">(σ² = 1.6679527795586182, β = 14.222640144065473, ψ² = 0.9782789073510294)</code></pre><h2 id="Check-by-numerical-integration"><a class="docs-heading-anchor" href="#Check-by-numerical-integration">Check by numerical integration</a><a id="Check-by-numerical-integration-1"></a><a class="docs-heading-anchor-permalink" href="#Check-by-numerical-integration" title="Permalink"></a></h2><p>Given <span>$\psi^2$</span> the prior is conjugate, so the marginal likelihood conditional on <span>$\psi^2$</span> is known in closed form,</p><p class="math-container">\[m(y \mid \psi^2) = \pi^{-n/2} \frac{|\Omega_0|^{1/2}}{|\Omega_n|^{1/2}}
+  \frac{\Gamma(\nu_n/2)}{\Gamma(\nu_0/2)}
+  \frac{(\nu_0 \tau_0^2)^{\nu_0/2}}{(\nu_n \tau_n^2)^{\nu_n/2}} .\]</p><p>The marginal likelihood is then a one-dimensional integral over the prior of <span>$\psi^2$</span>,</p><p class="math-container">\[m(y) = \int m(y \mid \psi^2)\, p(\psi^2)\, d\psi^2,\]</p><p>which is computed here by the trapezoidal rule on a grid for <span>$\ln \psi^2$</span>.</p><pre><code class="language-julia hljs">function logmarglik(ψ², data, prior)
+    (; Ωₙ, νₙ, τₙ²) = conjugate(ψ², data, prior)
+    n, ν₀ = length(data.y), prior.ν₀
+    return -n / 2 * log(π) + (logdet(Ω₀(ψ², prior, size(data.X, 2) - 1)) - logdet(Ωₙ)) / 2 +
+        loggamma(νₙ / 2) - loggamma(ν₀ / 2) + ν₀ / 2 * log(ν₀ * prior.τ₀²) - νₙ / 2 * log(νₙ * τₙ²)
+end
+
+grid = range(-40, 40; length = 8001)   # ln ψ²
+logintegrand = [logmarglik(exp(u), data, prior) + logpdf(InvChisq(prior.ω₀, prior.ψ₀²), exp(u)) + u
+                for u in grid]
+integrand = exp.(logintegrand .- maximum(logintegrand))
+exact = log(step(grid) * (sum(integrand) - (integrand[1] + integrand[end]) / 2)) + maximum(logintegrand)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">-130.34357647979235</code></pre><p>The estimate is within a few numerical standard errors of the exact value:</p><pre><code class="language-julia hljs">(estimate = estimate.logmarglik, exact = exact, nse = estimate.nse)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">(estimate = -130.34777831455926, exact = -130.34357647979235, nse = 0.002381438742397965)</code></pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../../method/">« Method</a><a class="docs-footer-nextpage" href="../nodal/">Probit regression »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.19.0 on <span class="colophon-date" title="Thursday 8 October 2026 13:40">Thursday 8 October 2026</span>. Using Julia version 1.13.1.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
