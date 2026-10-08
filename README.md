@@ -57,10 +57,12 @@ estimate.nse          # its numerical standard error
 ## Documentation
 
 The [documentation](https://mattiasvillani.github.io/MargLikeGibbsOutput.jl/dev) describes
-the method, latent data and the choice of evaluation point, and has one page for each of
-the applications in the paper. The pages are generated from the scripts in `examples`:
+the method, latent data and the choice of evaluation point, and has one page for each
+example. The pages are generated from the scripts in `examples`:
 
-- `nodal.jl`: probit regression with data augmentation (Table 2).
+- `ridge.jl`: ridge regression with a learned regularization parameter, checked against
+  numerical integration.
+- `nodal.jl`: probit regression with data augmentation (Table 2 of the paper).
 - `galaxy.jl`: Gaussian finite mixture models (Table 4).
 - `gnp.jl`: Markov switching model for U.S. GNP growth (Table 5).
 

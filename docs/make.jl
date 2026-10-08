@@ -3,7 +3,7 @@ using Documenter, Literate, MargLikeGibbsOutput
 ENV["GKSwstype"] = "100"  # Plots without a display
 
 # Each script in examples/ becomes a page, with the code run by Documenter
-const EXAMPLES = ["nodal", "galaxy", "gnp"]
+const EXAMPLES = ["ridge", "nodal", "galaxy", "gnp"]
 for example in EXAMPLES
     Literate.markdown(joinpath(@__DIR__, "..", "examples", "$example.jl"),
         joinpath(@__DIR__, "src", "examples"); credit = false)

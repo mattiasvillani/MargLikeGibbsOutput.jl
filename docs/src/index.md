@@ -105,7 +105,8 @@ Three things differ from the parameter blocks:
   include the parameter blocks.
 - `loglik` is the likelihood with the latent variables integrated out.
 
-The examples all have latent data: [Probit regression](@ref) has one parameter block,
+[Ridge regression](@ref) is an example without latent data. The other examples all have
+latent data: [Probit regression](@ref) has one parameter block,
 [Finite mixture models](@ref) three, and the [Markov switching model](@ref) draws the
 latent states with a custom sampler.
 
