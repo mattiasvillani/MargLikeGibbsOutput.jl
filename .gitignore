@@ -1,2 +1,4 @@
 Manifest.toml
 *.pdf
+docs/build/
+docs/src/examples/

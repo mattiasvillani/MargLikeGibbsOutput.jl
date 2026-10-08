@@ -1,38 +1,30 @@
 # MargLikeGibbsOutput.jl
 
-Marginal likelihood from the Gibbs output, following
+[![Docs](https://img.shields.io/badge/docs-dev-blue.svg)](https://mattiasvillani.github.io/MargLikeGibbsOutput.jl/dev)
+[![CI](https://github.com/mattiasvillani/MargLikeGibbsOutput.jl/actions/workflows/CI.yml/badge.svg)](https://github.com/mattiasvillani/MargLikeGibbsOutput.jl/actions/workflows/CI.yml)
+
+Estimation of the marginal likelihood from the output of a Gibbs sampler, by the method of
 
 > Chib, S. (1995). Marginal Likelihood from the Gibbs Output.
 > *Journal of the American Statistical Association*, 90(432), 1313-1321.
 
-The estimator works for any number of Gibbs blocks `θ₁, …, θ_B`, with or without latent
-data `z`, as long as every full conditional posterior of the parameter blocks has a
-known normalizing constant.
+The package works for any number of Gibbs blocks, with or without latent data, as long as
+the full conditional posterior of every parameter block has a known normalizing constant.
+You supply the full conditionals, the log-likelihood and the log prior density, and get
+the estimated log marginal likelihood with its numerical standard error.
 
-## The method
+## Installation
 
-The basic marginal likelihood identity holds at any point `θ*`:
+```julia
+using Pkg
+Pkg.add(url = "https://github.com/mattiasvillani/MargLikeGibbsOutput.jl")
+```
 
-    ln m(y) = ln f(y|θ*) + ln π(θ*) - ln π(θ*|y)
+## Example
 
-The posterior ordinate is decomposed as
-
-    π(θ*|y) = π(θ₁*|y) π(θ₂*|y, θ₁*) ⋯ π(θ_B*|y, θ₁*, …, θ_{B-1}*)
-
-and factor `r` is estimated by averaging the full conditional density
-`π(θᵣ*|y, θ₁*, …, θᵣ₋₁*, θᵣ₊₁, …, θ_B, z)` over the draws from a *reduced* Gibbs run in
-which the blocks `θ₁, …, θᵣ₋₁` are held fixed at `θ*`. A reduced run is the same Gibbs
-sampler with the conditionals of the fixed blocks left out, so no code beyond the full
-conditionals is needed.
-
-## Usage
-
-A model is specified by its full conditional posteriors, the log-likelihood and the log
-prior density. Each full conditional is a function `(state, data, prior) -> distribution`
-where `state` is a `NamedTuple` with the current value of all blocks and latent
-variables, `data` is the data and `prior` the prior hyperparameters, both in whatever
-form you like. The returned distribution is used both to draw the block (`rand`) and to
-evaluate its ordinate (`logpdf`), so each conditional is written only once.
+Each full conditional is a function `(state, data, prior) -> distribution`. The returned
+distribution is used both to draw the block and to evaluate its density, so each full
+conditional is written only once.
 
 ```julia
 using MargLikeGibbsOutput, Distributions
@@ -62,71 +54,35 @@ estimate.logmarglik   # estimated log marginal likelihood
 estimate.nse          # its numerical standard error
 ```
 
-`chib` makes one run of the full Gibbs sampler to choose `θ*` and then one run per block
-to estimate the ordinates, each with `ndraws` draws after `burnin`. A run with nothing
-left to integrate out (the last block in a model without latent data) is skipped, since
-the full conditional is then the exact ordinate.
+## Documentation
 
-### Latent data
+The [documentation](https://mattiasvillani.github.io/MargLikeGibbsOutput.jl/dev) describes
+the method, latent data and the choice of evaluation point, and has one page for each of
+the applications in the paper. The pages are generated from the scripts in `examples`:
 
-Latent variables are given by their full conditionals in `latents`. These only need to
-support `rand`, since latent variables are integrated out rather than evaluated. Each
-sweep updates the latent variables first, so `init` only needs starting values for the
-parameter blocks. `loglik` is the likelihood with the latent variables integrated out.
+- `nodal.jl`: probit regression with data augmentation (Table 2).
+- `galaxy.jl`: Gaussian finite mixture models (Table 4).
+- `gnp.jl`: Markov switching model for U.S. GNP growth (Table 5).
 
-```julia
-probit = GibbsModel(
-    conditionals = (β = β_conditional,),
-    latents = (z = z_conditional,),
-    loglik = ...,
-    logprior = ...,
-)
+The scripts for the last two make plots, so run them in the documentation environment:
+
+```
+julia --project=docs examples/galaxy.jl
 ```
 
-### The point θ*
+To build the documentation locally:
 
-The keyword `θstar` sets the point at which the identity is evaluated:
-
-- `θstar = posteriormean` (default): the posterior mean of each block.
-- `θstar = posteriormode`: the draw with the highest posterior density. Use this when the
-  posterior mean may be a low density point or is not a valid parameter value.
-- any function `(draws, logposterior) -> θ*` of the draws from the full Gibbs run.
-- a `NamedTuple` with a value for each block, in which case the initial run is skipped.
-
-### Numerical standard error
-
-The standard error follows Section 3 of the paper. With `h⁽ᵍ⁾` the vector of the `B`
-full conditional ordinates at draw `g`, the variance of their average `ĥ` is estimated
-with the Newey-West estimator using `lags` lags (10 by default, as in the paper), and
-the delta method gives the variance of `∑ᵣ ln ĥᵣ`.
-
-### Gibbs sampling
-
-The sampler is also available by itself, returning a vector with the draws of the
-parameter blocks:
-
-```julia
-draws = gibbs(model, y, prior, init; ndraws = 10_000, burnin = 1_000)
 ```
-
-## Examples
-
-The `examples` folder replicates the applications in the paper:
-
-- `nodal.jl`: binary probit regression with data augmentation (Table 2).
-- `galaxy.jl`: Gaussian finite mixture models with three blocks and latent component
-  indicators (Table 4).
-- `gnp.jl`: Markov switching model for U.S. GNP growth, with the latent states drawn by
-  forward filtering and backward sampling (Table 5).
+julia --project=docs -e 'using Pkg; Pkg.instantiate()'
+julia --project=docs docs/make.jl
+```
 
 ## A caveat
 
-The estimator assumes that the Gibbs sampler explores the whole posterior. A mixture
-model with `d` components has `d!` symmetric modes that differ only in the labelling of
-the components. If the sampler stays in one of them, the posterior ordinate is
-overestimated by a factor `d!` and the log marginal likelihood is too low by `ln d!`; see
+The estimator assumes that the Gibbs sampler explores the whole posterior. If the sampler
+stays in one of several modes, as with label switching in mixture models, the log marginal
+likelihood is underestimated and the numerical standard error gives no warning. See
 
 > Neal, R. M. (1999). Erroneous Results in "Marginal Likelihood from the Gibbs Output".
 
-`examples/galaxy.jl` shows this: the estimates there differ by `ln d!` from brute-force
-averages of the likelihood over prior draws.
+and the mixture and Markov switching examples.
