@@ -17,6 +17,12 @@ A model whose posterior is simulated by Gibbs sampling over the parameter blocks
 `θ` one with the parameter blocks only. Both log densities must include all normalizing
 constants.
 """
+
+"""Container for Gibbs-sampling conditionals and model density functions.
+
+`@kwdef` generates a keyword-based constructor. The type parameters capture the
+concrete types of the conditionals, latent conditionals, likelihood, and prior.
+"""
 Base.@kwdef struct GibbsModel{C<:NamedTuple,L<:NamedTuple,F,P}
     conditionals::C
     latents::L = (;)
