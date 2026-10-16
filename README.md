@@ -65,8 +65,10 @@ example. The pages are generated from the scripts in `examples`:
 - `nodal.jl`: probit regression with data augmentation (Table 2 of the paper).
 - `galaxy.jl`: Gaussian finite mixture models (Table 4).
 - `gnp.jl`: Markov switching model for U.S. GNP growth (Table 5).
+- `nile.jl`: local level model for the Nile river flow, with the levels integrated out by
+  the Kalman filter, checked against numerical integration.
 
-The scripts for the last two make plots, so run them in the documentation environment:
+The scripts for the last three make plots, so run them in the documentation environment:
 
 ```
 julia --project=docs examples/galaxy.jl

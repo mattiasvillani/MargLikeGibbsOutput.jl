@@ -107,8 +107,8 @@ Three things differ from the parameter blocks:
 
 [Ridge regression](@ref) is an example without latent data. The other examples all have
 latent data: [Probit regression](@ref) has one parameter block,
-[Finite mixture models](@ref) three, and the [Markov switching model](@ref) draws the
-latent states with a custom sampler.
+[Finite mixture models](@ref) three, and the [Markov switching model](@ref) and the
+[Local level model](@ref) draw the latent states jointly with a custom sampler.
 
 ## Choosing the point
 
