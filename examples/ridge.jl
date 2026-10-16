@@ -197,46 +197,64 @@ nothing #hide
 # intercept.
 
 function conjugate(ψ², data, prior)
-    (; y, X) = data
+    y, X = data.y, data.X
     Ωₙ = Symmetric(X'X + Ω₀(ψ², prior, size(X, 2) - 1))
     β̂ = Ωₙ \ (X'y)
     νₙ = prior.ν₀ + length(y)
     τₙ² = (prior.ν₀ * prior.τ₀² + y'y - β̂' * Ωₙ * β̂) / νₙ
-    return (; Ωₙ, β̂, νₙ, τₙ²)
+    return (Ωₙ=Ωₙ, β̂=β̂, νₙ=νₙ, τₙ²=τₙ²)
 end
 
-function σ²_conditional(state, data, prior)
-    (; νₙ, τₙ²) = conjugate(state.ψ², data, prior)
-    return InvChisq(νₙ, τₙ²)
+# Block 1 is a joint draw from the normal-inverse-chi-squared posterior of
+# ``(\beta, \sigma^2)`` given ``\psi^2``, made by first drawing ``\sigma^2`` and then
+# ``\beta`` given ``\sigma^2``. The block holds the vector ``(\beta^\top, \sigma^2)^\top``,
+# and its full conditional is a type with `rand` and a `logpdf` for the joint density:
+
+struct NormalInvChisq
+    β̂::Vector{Float64}
+    Ωₙ::Symmetric{Float64,Matrix{Float64}}
+    νₙ::Float64
+    τₙ²::Float64
 end
 
-function β_conditional(state, data, prior)
-    (; Ωₙ, β̂) = conjugate(state.ψ², data, prior)
-    return MvNormal(β̂, Symmetric(state.σ² * inv(Ωₙ)))
+function Base.rand(rng::AbstractRNG, d::NormalInvChisq)
+    σ² = rand(rng, InvChisq(d.νₙ, d.τₙ²))
+    β = rand(rng, MvNormal(d.β̂, Symmetric(σ² * inv(d.Ωₙ))))
+    return [β; σ²]
+end
+
+function Distributions.logpdf(d::NormalInvChisq, βσ²)
+    β, σ² = βσ²[1:end-1], βσ²[end]
+    return logpdf(InvChisq(d.νₙ, d.τₙ²), σ²) + logpdf(MvNormalCanon(Matrix(d.Ωₙ / σ²)), β - d.β̂)
+end
+
+function βσ²_conditional(state, data, prior)
+    (; Ωₙ, β̂, νₙ, τₙ²) = conjugate(state.ψ², data, prior)
+    return NormalInvChisq(β̂, Ωₙ, νₙ, τₙ²)
 end
 
 function ψ²_conditional(state, data, prior)
-    slopes = state.β[2:end]
+    slopes, σ² = state.βσ²[2:end-1], state.βσ²[end]
     ωₙ = prior.ω₀ + length(slopes)
-    return InvChisq(ωₙ, (sum(abs2, slopes) / state.σ² + prior.ω₀ * prior.ψ₀²) / ωₙ)
+    return InvChisq(ωₙ, (sum(abs2, slopes) / σ² + prior.ω₀ * prior.ψ₀²) / ωₙ)
 end
 nothing #hide
 
-# Block 1 is drawn in two steps, first ``\sigma^2`` and then ``\beta`` given
-# ``\sigma^2``. The model is therefore set up with the three conditionals in the order
-# ``\sigma^2``, ``\beta``, ``\psi^2``, and each sweep is exactly the two-block sampler
-# of Box 16.2. Note that the conditional of ``\sigma^2`` does not depend on ``\beta``.
+# The model has the two blocks of Box 16.2, in the order ``(\beta, \sigma^2)``,
+# ``\psi^2``.
 
-loglik(θ, data) = logpdf(MvNormal(data.X * θ.β, θ.σ² * I), data.y)
-
-function logprior(θ, prior)
-    p = length(θ.β) - 1
-    return logpdf(MvNormalCanon(Matrix(Ω₀(θ.ψ², prior, p) / θ.σ²)), θ.β) +
-        logpdf(InvChisq(prior.ν₀, prior.τ₀²), θ.σ²) + logpdf(InvChisq(prior.ω₀, prior.ψ₀²), θ.ψ²)
+function loglik(θ, data)
+    β, σ² = θ.βσ²[1:end-1], θ.βσ²[end]
+    return logpdf(MvNormal(data.X * β, σ² * I), data.y)
 end
 
-ridge = GibbsModel(
-    conditionals = (σ² = σ²_conditional, β = β_conditional, ψ² = ψ²_conditional); loglik, logprior)
+function logprior(θ, prior)
+    β, σ² = θ.βσ²[1:end-1], θ.βσ²[end]
+    return logpdf(MvNormalCanon(Matrix(Ω₀(θ.ψ², prior, length(β) - 1) / σ²)), β) +
+        logpdf(InvChisq(prior.ν₀, prior.τ₀²), σ²) + logpdf(InvChisq(prior.ω₀, prior.ψ₀²), θ.ψ²)
+end
+
+ridge = GibbsModel(conditionals = (βσ² = βσ²_conditional, ψ² = ψ²_conditional); loglik, logprior)
 nothing #hide
 
 # ## Posterior
@@ -244,36 +262,35 @@ nothing #hide
 # A posterior sample of 10000 draws after a burn-in of 1000 draws, as in the lab.
 
 rng = Xoshiro(2024)
-init = (σ² = 1.0, β = zeros(9), ψ² = 1.0)
+init = (βσ² = [zeros(9); 1.0], ψ² = 1.0)
 draws = gibbs(rng, ridge, data, prior, init; ndraws = 10_000, burnin = 1_000)
 
 names = ["intercept", "lcavol", "lweight", "age", "lbph", "svi", "lcp", "gleason", "pgg45"]
 summary(name, x) = println(rpad(name, 10), "mean = ", lpad(round(mean(x); digits = 3), 6),
     "   std = ", round(std(x); digits = 3))
 for (j, name) in enumerate(names)
-    summary(name, [draw.β[j] for draw in draws])
+    summary(name, [draw.βσ²[j] for draw in draws])
 end
-summary("σ²", [draw.σ² for draw in draws])
+summary("σ²", [draw.βσ²[end] for draw in draws])
 summary("ψ²", [draw.ψ² for draw in draws])
 summary("λ", [1 / draw.ψ² for draw in draws])
 
 # ## Marginal likelihood
 #
-# With the blocks in this order, the posterior ordinate is decomposed as
+# With two blocks, the posterior ordinate is decomposed as
 #
 # ```math
-# \pi(\theta^* \mid y) = \pi(\sigma^{2*} \mid y)\, \pi(\beta^* \mid y, \sigma^{2*})\,
-#   \pi(\psi^{2*} \mid y, \sigma^{2*}, \beta^*).
+# \pi(\theta^* \mid y) = \pi(\beta^*, \sigma^{2*} \mid y)\,
+#   \pi(\psi^{2*} \mid y, \beta^*, \sigma^{2*}).
 # ```
 #
-# The first factor averages the ``\text{Inv-}\chi^2(\nu_n, \tau_n^2)`` density over the
-# draws of ``\psi^2`` from the full sampler. The second averages the normal density of
-# ``\beta`` over the draws of ``\psi^2`` from a reduced run with ``\sigma^2`` fixed. The
-# third is the full conditional of ``\psi^2``, which is known exactly.
+# The first factor averages the normal-inverse-chi-squared density of Block 1 over the
+# draws of ``\psi^2`` from the full sampler. The second is the full conditional of
+# ``\psi^2``, which is known exactly, so no reduced run is needed.
 
 estimate = chib(rng, ridge, data, prior, init; ndraws = 10_000, burnin = 1_000)
 
-# The log ordinates of the three blocks are
+# The log ordinates of the two blocks are
 
 estimate.logordinates
 
