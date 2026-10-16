@@ -7,7 +7,8 @@
 # course Advanced Bayesian Learning.
 #
 # In this model the marginal likelihood can also be computed by numerical integration,
-# so the example ends with a check of the estimate.
+# which checks the estimate. The example ends by comparing the model to one with
+# Student-t errors, estimated with data augmentation.
 
 using MargLikeGibbsOutput, Distributions, LinearAlgebra, Random, Statistics
 using Distributions: loggamma
@@ -195,13 +196,16 @@ nothing #hide
 #
 # The sum in ``\psi_n^2`` is over the regularized coefficients, so it excludes the
 # intercept.
+#
+# The optional weights `w` in `conjugate` are used by the Student-t model at the end of
+# the example, and are all one here.
 
-function conjugate(ψ², data, prior)
+function conjugate(ψ², data, prior, w = ones(length(data.y)))
     y, X = data.y, data.X
-    Ωₙ = Symmetric(X'X + Ω₀(ψ², prior, size(X, 2) - 1))
-    β̂ = Ωₙ \ (X'y)
+    Ωₙ = Symmetric(X' * (w .* X) + Ω₀(ψ², prior, size(X, 2) - 1))
+    β̂ = Ωₙ \ (X' * (w .* y))
     νₙ = prior.ν₀ + length(y)
-    τₙ² = (prior.ν₀ * prior.τ₀² + y'y - β̂' * Ωₙ * β̂) / νₙ
+    τₙ² = (prior.ν₀ * prior.τ₀² + y' * (w .* y) - β̂' * Ωₙ * β̂) / νₙ
     return (Ωₙ=Ωₙ, β̂=β̂, νₙ=νₙ, τₙ²=τₙ²)
 end
 
@@ -228,8 +232,10 @@ function Distributions.logpdf(d::NormalInvChisq, βσ²)
     return logpdf(InvChisq(d.νₙ, d.τₙ²), σ²) + logpdf(MvNormalCanon(Matrix(d.Ωₙ / σ²)), β - d.β̂)
 end
 
+weights(state, data) = haskey(state, :v) ? 1 ./ state.v : ones(length(data.y))
+
 function βσ²_conditional(state, data, prior)
-    (; Ωₙ, β̂, νₙ, τₙ²) = conjugate(state.ψ², data, prior)
+    (; Ωₙ, β̂, νₙ, τₙ²) = conjugate(state.ψ², data, prior, weights(state, data))
     return NormalInvChisq(β̂, Ωₙ, νₙ, τₙ²)
 end
 
@@ -241,7 +247,8 @@ end
 nothing #hide
 
 # The model has the two blocks of Box 16.2, in the order ``(\beta, \sigma^2)``,
-# ``\psi^2``.
+# ``\psi^2``. The helper `weights` lets the conditional of Block 1 be reused by the
+# Student-t model below.
 
 function loglik(θ, data)
     β, σ² = θ.βσ²[1:end-1], θ.βσ²[end]
@@ -330,3 +337,69 @@ exact = log(step(grid) * (sum(integrand) - (integrand[1] + integrand[end]) / 2))
 # The estimate is within a few numerical standard errors of the exact value:
 
 (estimate = estimate.logmarglik, exact = exact, nse = estimate.nse)
+
+# ## Student-t errors
+#
+# The Gaussian errors are now replaced by Student-t errors with ``\nu`` degrees of
+# freedom, ``\varepsilon_i \sim t_\nu(0, \sigma^2)``, with the same prior for
+# ``(\beta, \sigma^2, \psi^2)``. The usual data augmentation writes the ``t``
+# distribution as a scale mixture of normals,
+#
+# ```math
+# \varepsilon_i \mid v_i \sim N(0, v_i \sigma^2), \qquad v_i \sim \text{Inv-}\chi^2(\nu, 1),
+# ```
+#
+# with independent latent variances ``v_1, \dots, v_n``. Given ``v``, the model is a
+# weighted regression with weights ``w_i = 1/v_i``, so Block 1 is the same
+# normal-inverse-chi-squared draw as before, with
+#
+# ```math
+# \Omega_n = X^\top W X + \Omega_0, \qquad \hat\beta_{L_2} = \Omega_n^{-1} X^\top W y, \qquad
+# \nu_n \tau_n^2 = \nu_0 \tau_0^2 + y^\top W y - \hat\beta_{L_2}^\top \Omega_n \hat\beta_{L_2},
+# ```
+#
+# where ``W = \text{diag}(w_1, \dots, w_n)``. Block 2 for ``\psi^2`` is unchanged, and the
+# latent variances are updated from
+#
+# ```math
+# v_i \mid \beta, \sigma^2, y \sim
+#   \text{Inv-}\chi^2\Big(\nu + 1, \frac{\nu + (y_i - x_i^\top \beta)^2/\sigma^2}{\nu + 1}\Big).
+# ```
+#
+# The degrees of freedom ``\nu`` are fixed and are passed with the prior.
+
+function v_conditional(state, data, prior)
+    β, σ² = state.βσ²[1:end-1], state.βσ²[end]
+    ν, residuals = prior.ν, data.y - data.X * β
+    return product_distribution(@. InvChisq(ν + 1, (ν + residuals^2 / σ²) / (ν + 1)))
+end
+
+# The likelihood in Chib's identity is the Student-t likelihood with ``v`` integrated out.
+# The prior is the same as in the Gaussian model, so `logprior` is reused.
+
+function tloglik(θ, data, ν)
+    β, σ = θ.βσ²[1:end-1], sqrt(θ.βσ²[end])
+    return sum(logpdf.(TDist(ν), (data.y - data.X * β) / σ)) - length(data.y) * log(σ)
+end
+
+tridge(ν) = GibbsModel(conditionals = (βσ² = βσ²_conditional, ψ² = ψ²_conditional),
+    latents = (v = v_conditional,), loglik = (θ, data) -> tloglik(θ, data, ν), logprior = logprior)
+nothing #hide
+
+# The log marginal likelihoods for a range of degrees of freedom, with the Gaussian model
+# as the limit ``\nu \to \infty``:
+
+for ν in (3, 5, 10, 30)
+    tprior = merge(prior, (ν = Float64(ν),))
+    t = chib(rng, tridge(ν), data, tprior, init; ndraws = 10_000, burnin = 1_000)
+    println("ν = ", rpad(ν, 4), "log marginal likelihood = ", round(t.logmarglik; digits = 2),
+        "   NSE = ", round(t.nse; sigdigits = 2))
+end
+println("Gaussian  log marginal likelihood = ", round(estimate.logmarglik; digits = 2),
+    "   NSE = ", round(estimate.nse; sigdigits = 2))
+
+# The marginal likelihood is highest for around ``\nu = 10``, but the differences from
+# the Gaussian model are small: a log Bayes factor of a few tenths is no real evidence
+# either way. Very heavy tails, ``\nu = 3``, are less supported than the Gaussian.
+# As ``\nu`` grows, the estimates approach the Gaussian marginal likelihood, as they
+# should.

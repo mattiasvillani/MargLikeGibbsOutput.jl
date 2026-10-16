@@ -61,7 +61,7 @@ the method, latent data and the choice of evaluation point, and has one page for
 example. The pages are generated from the scripts in `examples`:
 
 - `ridge.jl`: ridge regression with a learned regularization parameter, checked against
-  numerical integration.
+  numerical integration and compared to Student-t errors with data augmentation.
 - `nodal.jl`: probit regression with data augmentation (Table 2 of the paper).
 - `galaxy.jl`: Gaussian finite mixture models (Table 4).
 - `gnp.jl`: Markov switching model for U.S. GNP growth (Table 5).
